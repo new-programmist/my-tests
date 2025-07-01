@@ -1,24 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <title>Easy Iframe Runner</title>
   <style>
-    body { margin: 0; display: flex; height: 100vh; }
-    textarea { width: 50%; border: none; padding: 10px; font-family: monospace; font-size: 16px; }
-    iframe { width: 50%; border: none; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    #container { display: flex; height: 100%; width: 100%; }
+    #left, #right { height: 100%; }
+    #left { width: 50%; resize: none; border: none; padding: 10px; font-family: monospace; }
+    #divider {
+      width: 4px; cursor: ew-resize; background: #888;
+    }
+    #right { flex: 1; border: none; }
   </style>
 </head>
 <body>
-  <textarea id="input" oninput="run()"><!DOCTYPE html><html><body>Hello!</body></html></textarea>
-  <iframe id="output"></iframe>
+  <div id="container">
+    <textarea id="left" placeholder="Write HTML here..."></textarea>
+    <div id="divider"></div>
+    <iframe id="right"></iframe>
+  </div>
+
   <script>
-    function run() {
-      const iframe = document.getElementById('output');
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(document.getElementById('input').value);
-      doc.close();
+    const left = document.getElementById('left');
+    const right = document.getElementById('right');
+    let timeout;
+
+    function updateIframe() {
+      right.srcdoc = left.value;
     }
-    run();
+
+    left.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(updateIframe, 1000);
+    });
+
+    // Divider drag logic
+    const divider = document.getElementById('divider');
+    divider.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = left.offsetWidth;
+      const onMouseMove = e => {
+        left.style.width = `${startWidth + (e.clientX - startX)}px`;
+      };
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
   </script>
 </body>
 </html>
