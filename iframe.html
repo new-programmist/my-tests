@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; }
+    textarea { width: 50%; border: none; padding: 10px; font-family: monospace; font-size: 16px; }
+    iframe { width: 50%; border: none; }
+  </style>
+</head>
+<body>
+  <textarea id="input" oninput="run()"><!DOCTYPE html><html><body>Hello!</body></html></textarea>
+  <iframe id="output"></iframe>
+  <script>
+    function run() {
+      const iframe = document.getElementById('output');
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(document.getElementById('input').value);
+      doc.close();
+    }
+    run();
+  </script>
+</body>
+</html>
