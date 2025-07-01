@@ -2,17 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Easy Iframe Runner</title>
+  <title>Iframe Runner</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; }
     #container { display: flex; height: 100%; width: 100%; }
     #left, #right { height: 100%; }
-    #left { width: 50%; resize: none; border: none; padding: 10px; font-family: monospace; }
+    #left {
+      width: 50%; resize: none; border: none;
+      padding: 10px; font-family: monospace;
+    }
     #divider {
       width: 4px; cursor: ew-resize; background: #888;
     }
-    #right { flex: 1; border: none; }
+    #right {
+      flex: 1; border: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 9999;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -21,10 +32,14 @@
     <div id="divider"></div>
     <iframe id="right"></iframe>
   </div>
+  <div id="overlay"></div>
 
   <script>
     const left = document.getElementById('left');
     const right = document.getElementById('right');
+    const divider = document.getElementById('divider');
+    const overlay = document.getElementById('overlay');
+
     let timeout;
 
     function updateIframe() {
@@ -37,18 +52,22 @@
     });
 
     // Divider drag logic
-    const divider = document.getElementById('divider');
     divider.addEventListener('mousedown', e => {
       e.preventDefault();
       const startX = e.clientX;
       const startWidth = left.offsetWidth;
+      overlay.style.display = 'block';
+
       const onMouseMove = e => {
         left.style.width = `${startWidth + (e.clientX - startX)}px`;
       };
+
       const onMouseUp = () => {
+        overlay.style.display = 'none';
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
       };
+
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
     });
