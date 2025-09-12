@@ -72,8 +72,10 @@ function playPopSound() {
 }
 
 function addLog(text){
-  const htmlText = text.replace(/\(__LINK__\s+TITLE=".*?"\s+URL="(.*?)"\)/g, (match,url)=>{
-    return `<a href="${url}" target="_blank">画像</a>`;
+  const htmlText = text.replace(/\(__LINK__\s+TITLE="(.*?)"\s+URL="(.*?)"\)/g, (match,title,url)=>{
+    return `<a href="${url}" target="_blank">${title}</a>`;
+  }).replace(/\(__IMAGE__\s+URL="(.*?)"\)/g, (match,url)=>{
+    return `<a href="${url}" target="_blank"><image src=${url}></image></a>`;
   });
   logEl.innerHTML += htmlText + '<br>';
   logEl.scrollTop = logEl.scrollHeight;
@@ -186,7 +188,7 @@ imageUpload.addEventListener('change', async (ev) => {
     const base64 = reader.result.split(',')[1];
     imagePreviewContainer.innerHTML = `<img src="data:${file.type};base64,${base64}" />`;
 
-    const linkText = `(__LINK__ TITLE="${file.name}" URL="data:${file.type};base64,${base64}")`;
+    const linkText = `(__IMAGE__ URL="data:${file.type};base64,${base64}")`;
     messageEl.value += (messageEl.value ? '\n' : '') + linkText;
     checkCharLimit();
   };
