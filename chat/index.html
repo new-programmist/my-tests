@@ -52,6 +52,14 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    function makeHandshakePayload(){
+      return {
+        method: 'handshake',
+        user: document.getElementById('username').value,
+        project_id: document.getElementById('project').value
+      };
+    }
+
 function encodeMessage(msg) {
     // 各文字をUTF-32コードポイントで6桁の10進数に変換して連結
     return Array.from(msg)
@@ -73,15 +81,6 @@ function decodeValue(str) {
         return `エラー: ${e.message}`;
     }
 }
-
-    function decodeValue(str){
-      try {
-        const chars = str.match(/.{1,3}/g).map(n => String.fromCharCode(parseInt(n,10)));
-        return chars.join('');
-      } catch(e){
-        return `エラー: ${e.message}`;
-      }
-    }
 
     function openWs(){
       if(ws && ws.readyState === WebSocket.OPEN) return;
