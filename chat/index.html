@@ -176,7 +176,6 @@ encodeSendBtn.addEventListener('click', ()=>{
   };
   ws.send(JSON.stringify(payload));
   log(`${document.getElementById('username').value}(あなた): ${msg}`);
-  playPopSound();
   document.getElementById('message').value = '';
 });
 </script>
