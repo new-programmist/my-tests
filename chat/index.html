@@ -72,12 +72,33 @@ function playPopSound() {
 }
 
 function addLog(text){
-  const htmlText = text.replace(/\(__LINK__\s+TITLE="(.*?)"\s+URL="(.*?)"\)/g, (match,title,url)=>{
-    return `<a href="${url}" target="_blank">${title}</a>`;
-  }).replace(/\(__IMAGE__\s+URL="(.*?)"\)/g, (match,url)=>{
-    return `<a href="${url}" target="_blank"><image src=${url}></image></a>`;
+  const div = document.createElement('div');
+
+  // __LINK__ を処理
+  const linkReplaced = text.replace(/\(__LINK__\s+TITLE="(.*?)"\s+URL="(.*?)"\)/g,(match,title,url)=>{
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = "_blank";
+    a.textContent = title;
+    return a.outerHTML;
   });
-  logEl.innerHTML += htmlText + '<br>';
+
+  // __IMAGE__ を処理
+  const finalHtml = linkReplaced.replace(/\(__IMAGE__\s+URL="(.*?)"\)/g,(match,url)=>{
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = "_blank";
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxHeight = '120px';
+    img.style.border = '1px solid #ccc';
+    img.style.borderRadius = '6px';
+    a.appendChild(img);
+    return a.outerHTML;
+  });
+
+  div.innerHTML = finalHtml;
+  logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
 }
 
