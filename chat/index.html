@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>チャット</title>
+  <style>
+    body{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;margin:18px}
+    label,input,button,textarea{font-size:14px}
+    #log{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px;min-height:200px;overflow:auto}
+    .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .grow{flex:1}
+    textarea{width:100%;height:60px}
+  </style>
+</head>
+<body>
+  <h2>チャット</h2>
+  <div class="row">
+    <label for="username">ユーザー名</label>
+    <input id="username" class="grow" value="guest" />
+    <button id="connectBtn">接続</button>
+    <button id="disconnectBtn" disabled>切断</button>
+  </div>
+
+  <div class="row">
+    <label for="project" hidden>プロジェクトID</label>
+    <input id="project" value="00912" hidden/>
+    <button id="sendHandshake" hidden>ハンドシェイク送信</button>
+  </div>
+
+  <div class="row">
+    <label for="message">メッセージ</label>
+    <textarea id="message"></textarea>
+    <button id="encodeSend">エンコードして送信</button>
+  </div>
+
+  <h3>ログ</h3>
+  <div id="log"></div>
+
+  <script>
+    const url = 'wss://clouddata.turbowarp.org/';
+    let ws = null;
+    const logEl = document.getElementById('log');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const sendHandshakeBtn = document.getElementById('sendHandshake');
+    const encodeSendBtn = document.getElementById('encodeSend');
+
+    function log(...args){
+      const t = new Date().toISOString();
+      logEl.textContent += `[${t}] ` + args.map(a=>typeof a==='string'?a:JSON.stringify(a)).join(' ') + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function makeHandshakePayload(){
+      return {
+        method: 'handshake',
+        user: document.getElementById('username').value,
+        project_id: document.getElementById('project').value
+      };
+    }
+
+    function encodeMessage(msg){
+      const user = document.getElementById('username').value;
+      const fullMsg = `${user}: ${msg}`;
+      const codes = Array.from(fullMsg).map(c => c.charCodeAt(0).toString().padStart(3,'0'));
+      return codes.join('');
+    }
+
+    function decodeValue(str){
+      try {
+        const chars = str.match(/.{1,3}/g).map(n => String.fromCharCode(parseInt(n,10)));
+        return chars.join('');
+      } catch(e){
+        return `エラー: ${e.message}`;
+      }
+    }
+
+    function openWs(){
+      if(ws && ws.readyState === WebSocket.OPEN) return;
+      ws = new WebSocket(url);
+
+      ws.addEventListener('open', ()=>{
+        log('接続完了', '');
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+        try{
+          const payload = makeHandshakePayload();
+          ws.send(JSON.stringify(payload));
+          //log('ハンドシェイク送信 (自動):', payload);
+        }catch(e){
+          log('ハンドシェイク送信失敗:', e.message);
+        }
+      });
+
+      ws.addEventListener('message', ev=>{
+        let data = ev.data;
+        try{ data = JSON.parse(ev.data); }
+        catch(e){}
+        if(data && data.method === 'set' && data.name === '☁ 0'){
+          const decoded = decodeValue(data.value);
+          log(/*'デコード結果:',*/ decoded);
+        } else {
+          log('受信:', data);
+        }
+      });
+
+      ws.addEventListener('close', ev=>{
+        log('WebSocket切断', ev.code, ev.reason);
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      });
+
+      ws.addEventListener('error', ev=>{
+        log('WebSocketエラー', ev);
+      });
+    }
+
+    function closeWs(){
+      if(!ws) return;
+      ws.close(1000, 'client disconnect');
+      ws = null;
+    }
+
+    connectBtn.addEventListener('click', ()=>{
+      openWs();
+    });
+
+    disconnectBtn.addEventListener('click', ()=>{
+      closeWs();
+    });
+
+    sendHandshakeBtn.addEventListener('click', ()=>{
+      if(!ws || ws.readyState !== WebSocket.OPEN){ log('WebSocket未接続'); return; }
+      const payload = makeHandshakePayload();
+      ws.send(JSON.stringify(payload));
+      log('ハンドシェイク送信 (手動):', payload);
+    });
+
+    encodeSendBtn.addEventListener('click', ()=>{
+      if(!ws || ws.readyState !== WebSocket.OPEN){ log('WebSocket未接続'); return; }
+      const msg = document.getElementById('message').value;
+      const encoded = encodeMessage(msg);
+      const payload = {method:'set', user:document.getElementById('username').value, project_id:document.getElementById('project').value, name:'☁ 0', value: encoded};
+      ws.send(JSON.stringify(payload));
+      log('', `${document.getElementById('username').value}(あなた): ${msg}`);
+    });
+  </script>
+</body>
+</html>
