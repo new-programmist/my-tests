@@ -61,8 +61,9 @@
     }
 
 function encodeMessage(msg) {
-    // 各文字をUTF-32コードポイントで6桁の10進数に変換して連結
-    return Array.from(msg)
+　　const user = document.getElementById('username').value; 
+　　const fullMsg = user + ": " + msg;
+    return Array.from(fullMsg)
         .map(char => char.codePointAt(0).toString().padStart(6, '0'))
         .join('');
 }
