@@ -34,6 +34,10 @@
     <button id="encodeSend">エンコードして送信</button>
   </div>
 
+  <div class="row">
+    <label><input type="checkbox" id="soundToggle" checked /> メッセージで音を鳴らす</label>
+  </div>
+
   <h3>ログ</h3>
   <div id="log"></div>
 
@@ -45,6 +49,18 @@
     const disconnectBtn = document.getElementById('disconnectBtn');
     const sendHandshakeBtn = document.getElementById('sendHandshake');
     const encodeSendBtn = document.getElementById('encodeSend');
+    const soundToggle = document.getElementById('soundToggle');
+
+    // 効果音
+    const sendSound = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+    const receiveSound = new Audio('https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg');
+
+    function playSound(sound) {
+      if (soundToggle.checked) {
+        sound.currentTime = 0;
+        sound.play();
+      }
+    }
 
     function log(...args){
       const t = new Date().toISOString();
@@ -60,28 +76,28 @@
       };
     }
 
-function encodeMessage(msg) {
-　　const user = document.getElementById('username').value; 
-　　const fullMsg = user + ": " + msg;
-    return Array.from(fullMsg)
-        .map(char => char.codePointAt(0).toString().padStart(6, '0'))
-        .join('');
-}
-
-function decodeValue(str) {
-    try {
-        if (str.length % 6 !== 0) throw new Error("文字列の長さが不正です");
-        let result = '';
-        for (let i = 0; i < str.length; i += 6) {
-            const code = parseInt(str.slice(i, i + 6), 10);
-            if (isNaN(code)) throw new Error("不正な数値が含まれています");
-            result += String.fromCodePoint(code);
-        }
-        return result;
-    } catch (e) {
-        return `エラー: ${e.message}`;
+    function encodeMessage(msg) {
+      const user = document.getElementById('username').value; 
+      const fullMsg = user + ": " + msg;
+      return Array.from(fullMsg)
+          .map(char => char.codePointAt(0).toString().padStart(6, '0'))
+          .join('');
     }
-}
+
+    function decodeValue(str) {
+      try {
+          if (str.length % 6 !== 0) throw new Error("文字列の長さが不正です");
+          let result = '';
+          for (let i = 0; i < str.length; i += 6) {
+              const code = parseInt(str.slice(i, i + 6), 10);
+              if (isNaN(code)) throw new Error("不正な数値が含まれています");
+              result += String.fromCodePoint(code);
+          }
+          return result;
+      } catch (e) {
+          return `エラー: ${e.message}`;
+      }
+    }
 
     function openWs(){
       if(ws && ws.readyState === WebSocket.OPEN) return;
@@ -94,7 +110,6 @@ function decodeValue(str) {
         try{
           const payload = makeHandshakePayload();
           ws.send(JSON.stringify(payload));
-          //log('ハンドシェイク送信 (自動):', payload);
         }catch(e){
           log('ハンドシェイク送信失敗:', e.message);
         }
@@ -106,7 +121,8 @@ function decodeValue(str) {
         catch(e){}
         if(data && data.method === 'set' && data.name === '☁ 0'){
           const decoded = decodeValue(data.value);
-          log(/*'デコード結果:',*/ decoded);
+          log(decoded);
+          playSound(receiveSound);
         } else {
           log('受信:', data);
         }
@@ -129,13 +145,8 @@ function decodeValue(str) {
       ws = null;
     }
 
-    connectBtn.addEventListener('click', ()=>{
-      openWs();
-    });
-
-    disconnectBtn.addEventListener('click', ()=>{
-      closeWs();
-    });
+    connectBtn.addEventListener('click', openWs);
+    disconnectBtn.addEventListener('click', closeWs);
 
     sendHandshakeBtn.addEventListener('click', ()=>{
       if(!ws || ws.readyState !== WebSocket.OPEN){ log('WebSocket未接続'); return; }
@@ -151,6 +162,7 @@ function decodeValue(str) {
       const payload = {method:'set', user:document.getElementById('username').value, project_id:document.getElementById('project').value, name:'☁ 0', value: encoded};
       ws.send(JSON.stringify(payload));
       log('', `${document.getElementById('username').value}(あなた): ${msg}`);
+      playSound(sendSound);
     });
   </script>
 </body>
