@@ -52,20 +52,27 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function makeHandshakePayload(){
-      return {
-        method: 'handshake',
-        user: document.getElementById('username').value,
-        project_id: document.getElementById('project').value
-      };
-    }
+function encodeMessage(msg) {
+    // 各文字をUTF-32コードポイントで6桁の10進数に変換して連結
+    return Array.from(msg)
+        .map(char => char.codePointAt(0).toString().padStart(6, '0'))
+        .join('');
+}
 
-    function encodeMessage(msg){
-      const user = document.getElementById('username').value;
-      const fullMsg = `${user}: ${msg}`;
-      const codes = Array.from(fullMsg).map(c => c.charCodeAt(0).toString().padStart(3,'0'));
-      return codes.join('');
+function decodeValue(str) {
+    try {
+        if (str.length % 6 !== 0) throw new Error("文字列の長さが不正です");
+        let result = '';
+        for (let i = 0; i < str.length; i += 6) {
+            const code = parseInt(str.slice(i, i + 6), 10);
+            if (isNaN(code)) throw new Error("不正な数値が含まれています");
+            result += String.fromCodePoint(code);
+        }
+        return result;
+    } catch (e) {
+        return `エラー: ${e.message}`;
     }
+}
 
     function decodeValue(str){
       try {
