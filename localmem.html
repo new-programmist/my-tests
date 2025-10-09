@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>localStorage に 30MB ランダムを保存</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; padding: 20px; line-height: 1.5; }
+  button { margin-right: 10px; }
+  pre { background:#f6f6f6; padding:10px; border-radius:6px; }
+</style>
+</head>
+<body>
+  <h1>localStorage にランダムデータ（目標: 30MB）を保存</h1>
+  <p>注意：ブラウザの容量制限により途中で失敗する場合があります。</p>
+  <div>
+    <button id="start">開始 (30MB)</button>
+    <button id="clear">削除 (prefix: rs_part_)</button>
+  </div>
+  <p id="status">未開始</p>
+  <pre id="log"></pre>
+
+<script>
+(async function(){
+  const TARGET_MB = 30;                // 目標メガバイト（生データサイズ）
+  const CHUNK_BYTES = 1 * 1024 * 1024; // 1チャンク = 1MiB（raw bytes）
+  const PREFIX = 'rs_part_';           // 保存時のキー接頭辞
+
+  const startBtn = document.getElementById('start');
+  const clearBtn = document.getElementById('clear');
+  const status = document.getElementById('status');
+  const log = document.getElementById('log');
+
+  function appendLog(...args){
+    log.textContent += args.join(' ') + '\\n';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // Uint8Array -> base64 を非同期に作る（Blob + FileReader を使う）
+  function uint8ToBase64(u8){
+    return new Promise((resolve, reject) => {
+      try {
+        const blob = new Blob([u8], { type: 'application/octet-stream' });
+        const fr = new FileReader();
+        fr.onload = () => {
+          // data:...;base64,AAAA...
+          const res = fr.result;
+          const comma = res.indexOf(',');
+          resolve(res.slice(comma + 1)); // "純粋な" base64 部分だけ返す（プレフィックス除去）
+        };
+        fr.onerror = (e) => reject(e);
+        fr.readAsDataURL(blob);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  async function storeRandomToLocalStorage(targetMB){
+    // 計画チャンク数
+    const targetBytes = targetMB * 1024 * 1024;
+    const chunksNeeded = Math.ceil(targetBytes / CHUNK_BYTES);
+    appendLog(`目標: ${targetMB} MB (${targetBytes} bytes) を ${chunksNeeded} チャンクで保存します。`);
+    status.textContent = '処理中...';
+
+    let storedRawBytes = 0;
+    for (let i = 0; i < chunksNeeded; i++){
+      // チャンクごとのサイズ（最後は小さくなる可能性あり）
+      const remaining = targetBytes - storedRawBytes;
+      const thisSize = Math.min(CHUNK_BYTES, remaining);
+
+      appendLog(`チャンク ${i+1}/${chunksNeeded} を生成 (${thisSize} bytes)...`);
+      // 乱数生成
+      const u8 = new Uint8Array(thisSize);
+      crypto.getRandomValues(u8);
+
+      // base64 に変換（非同期）
+      let b64;
+      try {
+        b64 = await uint8ToBase64(u8); // ここでメモリを抑えつつ base64 を得る
+      } catch (e) {
+        appendLog('base64 変換で例外:', e);
+        status.textContent = '失敗: base64変換でエラー';
+        return;
+      }
+
+      const key = PREFIX + i;
+      try {
+        // localStorage に保存（ここで容量オーバーになる可能性）
+        localStorage.setItem(key, b64);
+        storedRawBytes += thisSize;
+        appendLog(`保存成功: ${key} （合計保存raw: ${storedRawBytes} bytes）`);
+        status.textContent = `保存中: ${Math.round(storedRawBytes/1024/1024*100)/100} MB / ${targetMB} MB`;
+        // 少し待つことで UI の応答性を改善
+        await new Promise(r => setTimeout(r, 50));
+      } catch (err) {
+        // QuotaExceededError 等をキャッチ
+        appendLog('localStorage への保存でエラー:', err && err.name ? err.name : String(err));
+        appendLog('保存を中止します。実際に保存できたサイズ:', storedRawBytes, 'bytes');
+        status.textContent = '保存失敗（容量超過の可能性）';
+        return;
+      }
+    }
+
+    appendLog('すべてのチャンクを保存しました。合計 raw bytes:', storedRawBytes);
+    status.textContent = '完了: 保存成功';
+  }
+
+  function clearStoredParts(){
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith(PREFIX)) keys.push(k);
+    }
+    for (const k of keys) localStorage.removeItem(k);
+    appendLog('削除完了: ', keys.length, '個のキーを削除しました。');
+    status.textContent = '削除完了';
+  }
+
+  startBtn.addEventListener('click', async () => {
+    log.textContent = '';
+    appendLog('処理開始: localStorage に乱数を格納します。');
+    appendLog('注意: 多くのブラウザで localStorage の容量は 5MB〜10MB 程度です。30MB の全保存は失敗することが多いです。');
+    await storeRandomToLocalStorage(TARGET_MB);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    clearStoredParts();
+  });
+
+  // ページ読み込み時に既存のパーツ数を表示
+  (function showExisting(){
+    let count = 0, rawBytes = 0;
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith(PREFIX)){
+        count++;
+        const val = localStorage.getItem(k) || '';
+        // base64 の長さ -> raw bytes を概算 (floor(base64_len * 3/4))
+        rawBytes += Math.floor(val.length * 3 / 4);
+      }
+    }
+    if (count) appendLog(`既存: ${count} 個のパーツ (概算 raw ${Math.round(rawBytes/1024/1024*100)/100} MB) が見つかりました。`);
+  })();
+
+})();
+</script>
+</body>
+</html>
