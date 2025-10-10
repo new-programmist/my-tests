@@ -1,4 +1,34 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Iframe Runner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    #container { display: flex; height: 100%; width: 100%; }
+    #left, #right { height: 100%; }
+    #left {
+      width: 50%; resize: none; border: none;
+      padding: 10px; font-family: monospace;
+    }
+    #divider {
+      width: 4px; cursor: ew-resize; background: #888;
+    }
+    #right {
+      flex: 1; border: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 9999;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <textarea id="left" placeholder="Write HTML here..."><html>
 <head>
   <script src="https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.7.1/dist/browser.script.iife.js"></script>
 <script type="text/ruby">
@@ -19,20 +49,56 @@ module Kernel
     puts *args.map{_1.inspect}
   end
 end
-
-# --- これ以降のputsはブラウザの画面に直接出力されます ---
-
-
   </script>
 </head>
 <body>
 <script type="text/ruby">
-puts "Hello, Browser!"
-puts "これはRubyによって書き込まれました。"
-puts 100 * 5
-puts ["Ruby", "on", "Wasm"]
-p "aaa"
+#Write here
 </script>
 </body>
-</html>
+</html></textarea>
+    <div id="divider"></div>
+    <iframe id="right"></iframe>
+  </div>
+  <div id="overlay"></div>
 
+  <script>
+    const left = document.getElementById('left');
+    const right = document.getElementById('right');
+    const divider = document.getElementById('divider');
+    const overlay = document.getElementById('overlay');
+
+    let timeout;
+
+    function updateIframe() {
+      right.srcdoc = left.value;
+    }
+
+    left.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(updateIframe, 1000);
+    });
+
+    // Divider drag logic
+    divider.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = left.offsetWidth;
+      overlay.style.display = 'block';
+
+      const onMouseMove = e => {
+        left.style.width = `${startWidth + (e.clientX - startX)}px`;
+      };
+
+      const onMouseUp = () => {
+        overlay.style.display = 'none';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+  </script>
+</body>
+</html>
