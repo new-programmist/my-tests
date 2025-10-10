@@ -28,7 +28,43 @@
 </head>
 <body>
   <div id="container">
-    <textarea id="left" placeholder="Write HTML here..."></textarea>
+    <textarea id="left" placeholder="Write HTML here..."><html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.7.1/dist/browser.script.iife.js"></script>
+<script type="text/ruby">
+require "js"
+$js = JS
+module Kernel
+  # 元のputsをコンソール出力用として別名で保存しておきます
+  alias_method :original_puts, :puts
+
+  def puts(*args)
+    #original_puts(*args)
+
+    output_string = args.map(&:to_s).join("\n") + "<br>"
+
+    $js.global[:document].write(output_string)
+  end
+  def p(*args)
+    puts *args.map{_1.inspect}
+  end
+end
+
+# --- これ以降のputsはブラウザの画面に直接出力されます ---
+
+
+  </script>
+</head>
+<body>
+<script type="text/ruby">
+puts "Hello, Browser!"
+puts "これはRubyによって書き込まれました。"
+puts 100 * 5
+puts ["Ruby", "on", "Wasm"]
+p "aaa"
+</script>
+</body>
+</html></textarea>
     <div id="divider"></div>
     <iframe id="right"></iframe>
   </div>
