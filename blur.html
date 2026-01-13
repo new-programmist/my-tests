@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<body>
+<h2>画像加工</h2>
+
+<input type="file" id="f"><br><br>
+
+<label>
+加工方法：
+<select id="mode">
+  <option value="blur">ぼかし</option>
+  <option value="mosaic">モザイク</option>
+</select>
+</label>
+<br><br>
+
+<label>
+強度：
+<input type="range" id="r" min="1" max="30" value="8">
+</label>
+<br><br>
+
+<canvas id="c"></canvas><br>
+<button onclick="exportPPM()">ダウンロード</button>
+
+<script>
+const c = document.getElementById("c");
+const x = c.getContext("2d");
+let img, orig;
+
+f.onchange = e => {
+  const rd = new FileReader();
+  rd.onload = () => {
+    img = new Image();
+    img.onload = () => {
+      c.width = img.width;
+      c.height = img.height;
+
+      // 元画像を保存（下位8bit用）
+      const t = document.createElement("canvas");
+      t.width = img.width;
+      t.height = img.height;
+      t.getContext("2d").drawImage(img,0,0);
+      orig = t.getContext("2d")
+        .getImageData(0,0,img.width,img.height).data;
+
+      draw();
+    };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(e.target.files[0]);
+};
+
+r.oninput = draw;
+mode.onchange = draw;
+
+function draw(){
+  if(!img) return;
+
+  x.clearRect(0,0,c.width,c.height);
+
+  if(mode.value === "blur"){
+    x.filter = `blur(${r.value}px)`;
+    x.drawImage(img,0,0);
+    x.filter = "none";
+  } else {
+    const s = Number(r.value);
+    const w = c.width, h = c.height;
+
+    // 縮小 → 拡大でモザイク
+    x.imageSmoothingEnabled = false;
+    x.drawImage(img, 0,0, w/s, h/s);
+    x.drawImage(
+      c,
+      0,0, w/s, h/s,
+      0,0, w,h
+    );
+    x.imageSmoothingEnabled = true;
+  }
+}
+
+function exportPPM(){
+  const view = x.getImageData(0,0,c.width,c.height).data;
+  let header = `P6\n${c.width} ${c.height}\n65535\n`;
+  let body = new Uint8Array(c.width*c.height*6);
+
+  let p=0;
+  for(let i=0;i<view.length;i+=4){
+    for(let j=0;j<3;j++){
+      body[p++] = view[i+j]; // 上位8bit（加工後）
+      body[p++] = orig[i+j]; // 下位8bit（元画像）
+    }
+  }
+
+  const blob = new Blob([header, body], {
+    type: "application/octet-stream"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "image.ppm";
+  a.click();
+}
+</script>
+</body>
+</html>
