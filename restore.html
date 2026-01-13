@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<body>
+<h2>画像復元</h2>
+<input type="file" id="f"><br><br>
+<canvas id="c"></canvas>
+
+<script>
+f.onchange = async () => {
+  const buf = await f.files[0].arrayBuffer();
+  const u8 = new Uint8Array(buf);
+
+  const txt = new TextDecoder().decode(u8);
+  const m = txt.match(/P6\s+(\d+)\s+(\d+)\s+65535\s/);
+  const off = m[0].length;
+  const w = +m[1], h = +m[2];
+
+  const c = document.getElementById("c");
+  c.width=w; c.height=h;
+  const x = c.getContext("2d");
+  const img = x.createImageData(w,h);
+
+  let p=off, o=0;
+  for(let i=0;i<w*h;i++){
+    img.data[o++] = u8[p+1];
+    img.data[o++] = u8[p+3];
+    img.data[o++] = u8[p+5];
+    img.data[o++] = 255;
+    p+=6;
+  }
+  x.putImageData(img,0,0);
+};
+</script>
+</body>
+</html>
