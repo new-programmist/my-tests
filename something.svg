@@ -20,6 +20,6 @@ li.textContent = 'hello world';">
     alert(1)
     </script>
   </foreignObject>
-  <img src="aaa" onerror="alert(0)">
+  <img src="aaa" onerror="alert(0)"/>
 </svg>
 
