@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pc Stat Checker</title>
+</head>
+<body>
+<button onclick="start()">開始</button>
+
+<script>
+function start() {
+  const coreCount = navigator.hardwareConcurrency || 4;
+  const workers = [];
+  let total = 0;
+  let finished = 0;
+
+  const workerCode = `
+    let count = 0;
+    let running = true;
+
+    onmessage = function(e) {
+      if (e.data === "start") {
+        const end = Date.now() + 5000;
+        while (Date.now() < end) {
+          count++;
+        }
+        postMessage(count);
+      }
+    }
+  `;
+
+  const blob = new Blob([workerCode], { type: "application/javascript" });
+  const url = URL.createObjectURL(blob);
+
+  for (let i = 0; i < coreCount; i++) {
+    const worker = new Worker(url);
+    worker.onmessage = function(e) {
+      total += e.data;
+      finished++;
+      worker.terminate();
+
+      if (finished === coreCount) {
+        alert(("" + (total / 1073741824)) + " GiHz Total");
+      }
+    };
+    workers.push(worker);
+    worker.postMessage("start");
+  }
+}
+</script>
+
+</body>
+</html>
