@@ -40,7 +40,7 @@ function start() {
       worker.terminate();
 
       if (finished === coreCount) {
-        alert(("" + (total / 1073741824)) + " GiHz Total");
+        alert(("" + (total / 1048576)) + " MiHz Total");
       }
     };
     workers.push(worker);
