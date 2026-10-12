@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マインクラフト 最適エンチャント計算機</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #2c3e50;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        h2 {
+            font-size: 16px;
+            color: #16a085;
+            margin-top: 20px;
+        }
+
+        .btn-calc {
+            display: block;
+            width: 100%;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background 0.2s;
+        }
+
+        .btn-calc:hover {
+            background-color: #219653;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            overflow-x: auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            font-family: Consolas, Monaco, monospace;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        #targetInput {
+            height: 100px;
+        }
+
+        #summaryOutput {
+            background: #eef7f6;
+            padding: 15px;
+            border-left: 5px solid #16a085;
+            border-radius: 0 4px 4px 0;
+            display: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>マインクラフト 最適エンチャント計算機</h1>
+
+    <p style="font-size:13px; color:#666;">
+        素材データと目標エンチャントをJSON形式で編集して計算してください。
+        DFS（深さ優先探索）で最小消費経験値の合成手順を探索します。
+    </p>
+
+    <h2>素材データ編集 (JSON)</h2>
+
+    <textarea id="itemsInput">[
+  {"enchant": {"Prot": 1, "SS": 2}, "penalty": 0, "type": "item"},
+  {"enchant": {"Prot": 1, "SS": 2}, "penalty": 0, "type": "item"},
+  {"enchant": {}, "penalty": 0, "type": "item"},
+  {"enchant": {"Thorn": 3}, "penalty": 0, "type": "book"},
+  {"enchant": {"BP": 4}, "penalty": 0, "type": "book"},
+  {"enchant": {"Unb": 3}, "penalty": 0, "type": "book"},
+  {"enchant": {"Mend": 1}, "penalty": 0, "type": "book"}
+]</textarea>
+
+    <h2>目標エンチャント（結果）指定 (JSON)</h2>
+
+    <textarea id="targetInput">{"enchant": {"SS": 3, "Unb": 3, "Mend": 1, "Thorn": 3, "BP": 4}, "type": "item"}</textarea>
+
+    <button class="btn-calc" onclick="runOptimization()">
+        最適合成ルートを計算する
+    </button>
+
+    <h2>計算結果まとめ</h2>
+
+    <div id="summaryOutput"></div>
+
+    <h2>詳細合成ステップ</h2>
+
+    <div id="stepsOutput">計算ボタンを押すと、ここに手順が出力されます。</div>
+</div>
+
+<script>
+const ENCHANT_MULTIPLIERS = {
+    "SS":    { "item": 8, "book": 4 },
+    "Thorn": { "item": 8, "book": 4 },
+    "BP":    { "item": 4, "book": 2 },
+    "Prot":  { "item": 1, "book": 1 },
+    "Unb":   { "item": 2, "book": 1 },
+    "Mend":  { "item": 4, "book": 2 }
+};
+
+const INCOMPATIBLE_GROUPS = [["Prot", "BP"]];
+
+const LABELS = [
+    "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
+    "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+    "㉑", "㉒", "㉓", "㉔", "㉕", "㉖", "㉗", "㉘", "㉙", "㉚"
+];
+
+function getLabel(index) {
+    if (index < LABELS.length) {
+        return LABELS[index];
+    }
+
+    return `(${index + 1})`;
+}
+
+function levelToXp(level) {
+    if (level <= 0) return 0;
+
+    if (level <= 16) {
+        return level ** 2 + 6 * level;
+    }
+
+    if (level <= 31) {
+        return 2.5 * level ** 2 - 40.5 * level + 360;
+    }
+
+    return 4.5 * level ** 2 - 162.5 * level + 2220;
+}
+
+function getPenaltyLevel(count) {
+    return 2 ** count - 1;
+}
+
+function add(itemA, itemB) {
+    if (itemA.type === "book" && itemB.type !== "book") {
+        return null;
+    }
+
+    const pA = itemA.penalty || 0;
+    const pB = itemB.penalty || 0;
+
+    const enchantsA = itemA.enchant || {};
+    const enchantsB = itemB.enchant || {};
+
+    const baseCost =
+        getPenaltyLevel(pA) + getPenaltyLevel(pB);
+
+    let enchantCost = 0;
+
+    const nextEnchants = { ...enchantsA };
+
+    const sourceType =
+        itemB.type === "book" ? "book" : "item";
+
+    for (const [ench, levelB] of Object.entries(enchantsB)) {
+        let isIncompatible = false;
+
+        for (const group of INCOMPATIBLE_GROUPS) {
+            if (group.includes(ench)) {
+                const enemy = group.find(
+                    e => e !== ench && enchantsA[e] !== undefined
+                );
+
+                if (enemy) {
+                    isIncompatible = true;
+                    enchantCost += 1;
+                    break;
+                }
+            }
+        }
+
+        if (isIncompatible) continue;
+
+        const levelA = nextEnchants[ench];
+
+        const multiplier = ENCHANT_MULTIPLIERS[ench]
+            ? ENCHANT_MULTIPLIERS[ench][sourceType]
+            : 1;
+
+        if (levelA === undefined) {
+            enchantCost += levelB * multiplier;
+            nextEnchants[ench] = levelB;
+
+        } else if (levelA === levelB) {
+            nextEnchants[ench] = levelA + 1;
+            enchantCost += nextEnchants[ench] * multiplier;
+
+        } else if (levelB > levelA) {
+            nextEnchants[ench] = levelB;
+            enchantCost += levelB * multiplier;
+
+        } else {
+            enchantCost += 1;
+        }
+    }
+
+    const totalLevel = baseCost + enchantCost;
+
+    if (totalLevel >= 40) {
+        return null;
+    }
+
+    return {
+        item: {
+            enchant: nextEnchants,
+            penalty: Math.max(pA, pB) + 1,
+            type: itemA.type
+        },
+        level: totalLevel,
+        xp: levelToXp(totalLevel)
+    };
+}
+
+function targetReached(item, target) {
+    if (item.type !== target.type) {
+        return false;
+    }
+
+    for (const [key, value] of Object.entries(target.enchant)) {
+        if (item.enchant[key] !== value) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+let minTotalXp = Infinity;
+let bestSteps = [];
+let searchCount = 0;
+
+function dfs(currentItems, totalXp, steps, target, nextLabel) {
+    searchCount++;
+
+    if (totalXp >= minTotalXp) {
+        return;
+    }
+
+    const found = currentItems.find(
+        item => targetReached(item, target)
+    );
+
+    if (found) {
+        minTotalXp = totalXp;
+        bestSteps = [...steps];
+        return;
+    }
+
+    for (let i = 0; i < currentItems.length; i++) {
+        for (let j = 0; j < currentItems.length; j++) {
+            if (i === j) continue;
+
+            const itemA = currentItems[i];
+            const itemB = currentItems[j];
+
+            const res = add(itemA, itemB);
+
+            if (res === null) continue;
+
+            const resultLabel = getLabel(nextLabel);
+
+            const resultItem = {
+                ...res.item,
+                name: resultLabel
+            };
+
+            const nextItems = currentItems.filter(
+                (_, index) => index !== i && index !== j
+            );
+
+            nextItems.push(resultItem);
+
+            const step = {
+                left: itemA.name,
+                right: itemB.name,
+                result: resultLabel,
+                level: res.level,
+                xp: res.xp
+            };
+
+            dfs(
+                nextItems,
+                totalXp + res.xp,
+                [...steps, step],
+                target,
+                nextLabel + 1
+            );
+        }
+    }
+}
+
+function runOptimization() {
+    try {
+        const items = JSON.parse(
+            document.getElementById("itemsInput").value
+        );
+
+        const target = JSON.parse(
+            document.getElementById("targetInput").value
+        );
+
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error("素材データは空でない配列にしてください。");
+        }
+
+        if (!target || typeof target.enchant !== "object") {
+            throw new Error("目標エンチャントの形式が正しくありません。");
+        }
+
+        items.forEach((item, index) => {
+            item.name = String.fromCharCode(65 + index);
+        });
+
+        minTotalXp = Infinity;
+        bestSteps = [];
+        searchCount = 0;
+
+        const summaryOutput =
+            document.getElementById("summaryOutput");
+
+        const stepsOutput =
+            document.getElementById("stepsOutput");
+
+        summaryOutput.style.display = "none";
+        stepsOutput.textContent = "計算中...";
+
+        setTimeout(() => {
+            try {
+                dfs(items, 0, [], target, 0);
+
+                if (minTotalXp === Infinity) {
+                    summaryOutput.style.display = "none";
+
+                    stepsOutput.innerHTML =
+                        "<b style='color:red;'>" +
+                        "合成ルートが見つかりませんでした。" +
+                        "コストが40以上、合成方向が無効、" +
+                        "素材不足などの可能性があります。" +
+                        "</b>";
+
+                    return;
+                }
+
+                summaryOutput.style.display = "block";
+
+                summaryOutput.textContent =
+                    `最小消費経験値: ${minTotalXp.toLocaleString()} XP`;
+
+                let html = "<pre>";
+
+                // 素材一覧
+                items.forEach(item => {
+                    const data = {
+                        enchant: item.enchant || {},
+                        penalty: item.penalty || 0,
+                        type: item.type
+                    };
+
+                    html +=
+                        `${item.name}: ${JSON.stringify(data)}\n`;
+                });
+
+                html += "\n";
+
+                // 合成手順
+                bestSteps.forEach((step, index) => {
+                    html +=
+                        `${getLabel(index)} ` +
+                        `${step.left} + ${step.right} ＝＞ ` +
+                        `必要: ${step.level}Lv (${step.xp}XP)\n`;
+                });
+
+                html += "\n";
+                html += `合計: ${minTotalXp}XP\n`;
+                html += `探索ノード数: ${searchCount}`;
+
+                html += "</pre>";
+
+                stepsOutput.innerHTML = html;
+
+            } catch (error) {
+                stepsOutput.textContent =
+                    "計算エラー: " + error.message;
+            }
+        }, 50);
+
+    } catch (error) {
+        alert(
+            "JSONの形式を確認してください。\n" +
+            error.message
+        );
+    }
+}
+</script>
+
+</body>
+</html>
