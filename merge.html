@@ -620,7 +620,7 @@ function getMaterialName(index) {
 
 function normalizeItems() {
     items.forEach((item, index) => {
-        item.name = getMaterialName(index);
+        item.name = item.name || getMaterialName(index);
     });
 }
 
@@ -709,7 +709,7 @@ function addMaterial() {
 }
 
 function deleteMaterial(index) {
-    if (!confirm(`${getMaterialName(index)} を削除しますか？`)) {
+    if (!confirm(`${items[index].name || getMaterialName(index)} を削除しますか？`)) {
         return;
     }
 
@@ -726,10 +726,10 @@ function editMaterial(index) {
     const item = items[index];
 
     document.getElementById("drawerTitle").textContent =
-        `${getMaterialName(index)} を編集`;
+        `${item.name || getMaterialName(index)} を編集`;
 
     document.getElementById("editName").value =
-        getMaterialName(index);
+        item.name || getMaterialName(index);
 
     document.getElementById("editType").value = item.type;
 
@@ -858,7 +858,7 @@ function saveDrawer() {
 
         const penalty = Number(penaltyText);
 
-        if (!Number.issafeInteger(penalty)) {
+        if (!Number.isSafeInteger(penalty)) {
             throw new Error("ペナルティの値が大きすぎます。");
         }
 
@@ -875,7 +875,8 @@ function saveDrawer() {
             items[editingIndex] = {
                 enchant,
                 penalty,
-                type
+                type,
+                name: document.getElementById("editName").value.trim()
             };
 
             renderMaterials();
@@ -980,7 +981,7 @@ function applyJSON() {
 
             const penalty = item.penalty ?? 0;
 
-            if (!Number.issafeInteger(penalty) || penalty < 0) {
+            if (!Number.isSafeInteger(penalty) || penalty < 0) {
                 throw new Error(
                     `${index + 1}番目の素材の penalty が不正です。`
                 );
@@ -989,7 +990,7 @@ function applyJSON() {
             const enchant = {};
 
             for (const [name, level] of Object.entries(item.enchant)) {
-                if (!Number.issafeInteger(level) || level < 1) {
+                if (!Number.isSafeInteger(level) || level < 1) {
                     throw new Error(
                         `${name} のレベルは正の整数にしてください。`
                     );
@@ -1258,7 +1259,7 @@ function runOptimization() {
     const startItems = items.map((item, index) => ({
         ...item,
         enchant: { ...item.enchant },
-        name: getMaterialName(index)
+        name: item.name || getMaterialName(index)
     }));
 
     const goal = {
