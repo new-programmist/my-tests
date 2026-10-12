@@ -498,7 +498,7 @@ details summary {
             <div id="enchantList" class="enchant-list"></div>
 
             <p class="hint">
-                左側にエンチャント名、右側にレベルを入力してください。
+                左側でエンチャント名を選択し、右側でレベルを入力してください。
                 例: ダメージ軽減 = 4、スニーク速度上昇 = 3、耐久力 = 3
             </p>
         </div>
@@ -886,12 +886,31 @@ function createEnchantRow(name = "", level = 1) {
     const row = document.createElement("div");
     row.className = "enchant-row";
 
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.placeholder = "エンチャント名";
-    nameInput.value = name;
+    const nameInput = document.createElement("select");
     nameInput.className = "enchant-name";
     nameInput.setAttribute("aria-label", "エンチャント名");
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "選択してください";
+    nameInput.appendChild(placeholder);
+
+    for (const enchantName of Object.keys(ENCHANT_MULTIPLIERS)) {
+        const option = document.createElement("option");
+        option.value = enchantName;
+        option.textContent = enchantName;
+        nameInput.appendChild(option);
+    }
+
+    // JSONから読み込んだ未知のエンチャント名も選択状態を維持する
+    if (name && !Object.hasOwn(ENCHANT_MULTIPLIERS, name)) {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = `${name}（一覧にない名前）`;
+        nameInput.appendChild(option);
+    }
+
+    nameInput.value = name;
 
     const levelInput = document.createElement("input");
     levelInput.type = "number";
