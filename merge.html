@@ -1357,6 +1357,20 @@ function dfs(currentItems, totalXp, steps, goal, nextLabel) {
     }
 }
 
+function xpToLevel(xp) {
+  if (xp < 0) return 0;
+
+  if (xp <= 352) {
+    return Math.floor(Math.sqrt(xp + 9) - 3);
+  }
+
+  if (xp <= 1507) {
+    return Math.floor((81 + Math.sqrt(40 * xp - 7839)) / 10);
+  }
+
+  return Math.floor((325 + Math.sqrt(72 * xp - 54215)) / 18);
+}
+
 // ================================================
 // 結果表示
 // ================================================
@@ -1435,7 +1449,7 @@ function runOptimization() {
 
             lines.push("");
             lines.push(`合計: ${minTotalXp}XP`);
-            lines.push(`探索ノード数: ${searchCount}`);
+            lines.push(`レベル換算: ${xpToLevel(minTotalXp)}Lv + ${minTotalXp - levelToXp(xpToLevel(minTotalXp))}XP`);
 
             const pre = document.createElement("pre");
             pre.textContent = lines.join("\n");
