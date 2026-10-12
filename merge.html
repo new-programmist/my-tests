@@ -1,162 +1,1063 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マインクラフト 最適エンチャント計算機</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最適エンチャント計算機</title>
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-        }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-        h1 {
-            font-size: 22px;
-            color: #2c3e50;
-            border-bottom: 2px solid #34495e;
-            padding-bottom: 8px;
-            margin-top: 0;
-        }
+body {
+    font-family: Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
 
-        h2 {
-            font-size: 16px;
-            color: #16a085;
-            margin-top: 20px;
-        }
+.container {
+    max-width: 1000px;
+    margin: auto;
+}
 
-        .btn-calc {
-            display: block;
-            width: 100%;
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: background 0.2s;
-        }
+h1 {
+    font-size: 23px;
+    color: #2c3e50;
+    border-bottom: 2px solid #34495e;
+    padding-bottom: 12px;
+}
 
-        .btn-calc:hover {
-            background-color: #219653;
-        }
+h2 {
+    font-size: 17px;
+    margin-top: 28px;
+    color: #34495e;
+}
 
-        pre {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            overflow-x: auto;
-        }
+.panel {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
 
-        textarea {
-            width: 100%;
-            height: 180px;
-            font-family: Consolas, Monaco, monospace;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    padding: 9px 14px;
+    font-size: 14px;
+    transition: background 0.15s;
+}
 
-        #targetInput {
-            height: 100px;
-        }
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
-        #summaryOutput {
-            background: #eef7f6;
-            padding: 15px;
-            border-left: 5px solid #16a085;
-            border-radius: 0 4px 4px 0;
-            display: none;
-            font-weight: bold;
-        }
-    </style>
+.btn-primary {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #219653;
+}
+
+.btn-secondary {
+    background: #e8edf2;
+    color: #34495e;
+}
+
+.btn-secondary:hover {
+    background: #d7e0e8;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.material-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.material {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #dfe6ed;
+    border-radius: 6px;
+}
+
+.material-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.material-name {
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 5px;
+}
+
+.material-details {
+    color: #666;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.material-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.type-tag {
+    display: inline-block;
+    background: #e8edf2;
+    color: #34495e;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 11px;
+    margin-left: 5px;
+}
+
+.empty {
+    color: #888;
+    padding: 25px 10px;
+    text-align: center;
+}
+
+#targetSummary {
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+#summaryOutput {
+    display: none;
+    padding: 15px;
+    background: #eef7f6;
+    border-left: 5px solid #16a085;
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+#stepsOutput pre {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 16px;
+    border-radius: 5px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-x: auto;
+}
+
+textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 10px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: vertical;
+}
+
+input, select {
+    font: inherit;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid #ccd3dc;
+    border-radius: 5px;
+    background: white;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.field {
+    margin-bottom: 15px;
+}
+
+.hint {
+    color: #777;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.full-button {
+    width: 100%;
+    padding: 13px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* ドロワー */
+
+.drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+}
+
+.drawer-backdrop.open {
+    display: block;
+}
+
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(460px, 100%);
+    height: 100dvh;
+    background: white;
+    z-index: 101;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+    transform: translateX(105%);
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 17px 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.drawer-header h2 {
+    margin: 0;
+}
+
+.drawer-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.drawer-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+}
+
+.drawer-footer button {
+    flex: 1;
+}
+
+.enchant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.enchant-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 75px 38px;
+    gap: 7px;
+    align-items: center;
+}
+
+.enchant-row input {
+    min-width: 0;
+}
+
+.enchant-row button {
+    padding: 8px;
+}
+
+.enchant-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.enchant-heading label {
+    margin: 0;
+}
+
+.json-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+details summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 5px 0;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .material {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .material-info {
+        width: calc(100% - 10px);
+    }
+
+    .material-actions {
+        width: 100%;
+    }
+
+    .material-actions button {
+        flex: 1;
+    }
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
+
     <h1>マインクラフト 最適エンチャント計算機</h1>
 
-    <p style="font-size:13px; color:#666;">
-        素材データと目標エンチャントをJSON形式で編集して計算してください。
-        DFS（深さ優先探索）で最小消費経験値の合成手順を探索します。
+    <p class="hint">
+        AI味あるけどごめんね！ChatGPTに生成させてますので
     </p>
 
-    <h2>素材データ編集 (JSON)</h2>
+    <section class="panel">
+        <h2 style="margin-top:0">素材一覧</h2>
 
-    <textarea id="itemsInput">[
-  {"enchant": {"Prot": 1, "SS": 2}, "penalty": 0, "type": "item"},
-  {"enchant": {"Prot": 1, "SS": 2}, "penalty": 0, "type": "item"},
-  {"enchant": {}, "penalty": 0, "type": "item"},
-  {"enchant": {"Thorn": 3}, "penalty": 0, "type": "book"},
-  {"enchant": {"BP": 4}, "penalty": 0, "type": "book"},
-  {"enchant": {"Unb": 3}, "penalty": 0, "type": "book"},
-  {"enchant": {"Mend": 1}, "penalty": 0, "type": "book"}
-]</textarea>
+        <div class="toolbar">
+            <button class="btn-primary" onclick="addMaterial()">＋ 素材を追加</button>
+            <button class="btn-secondary" onclick="openImport()">JSONインポート</button>
+            <button class="btn-secondary" onclick="exportJSON()">JSONエクスポート</button>
+        </div>
 
-    <h2>目標エンチャント（結果）指定 (JSON)</h2>
+        <div id="materialList" class="material-list"></div>
 
-    <textarea id="targetInput">{"enchant": {"SS": 3, "Unb": 3, "Mend": 1, "Thorn": 3, "BP": 4}, "type": "item"}</textarea>
+    </section>
 
-    <button class="btn-calc" onclick="runOptimization()">
-        最適合成ルートを計算する
-    </button>
+    <section class="panel">
+        <h2 style="margin-top:0">目標エンチャント</h2>
 
-    <h2>計算結果まとめ</h2>
+        <div id="targetSummary"></div>
 
-    <div id="summaryOutput"></div>
+        <div class="toolbar" style="margin-top:12px">
+            <button class="btn-secondary" onclick="editTarget()">目標を編集</button>
+        </div>
+    </section>
 
-    <h2>詳細合成ステップ</h2>
+    <section class="panel">
+        <button
+            id="calculateButton"
+            class="btn-primary full-button"
+            onclick="runOptimization()"
+        >
+            最適合成ルートを計算する
+        </button>
 
-    <div id="stepsOutput">計算ボタンを押すと、ここに手順が出力されます。</div>
+    </section>
+
+    <section class="panel">
+        <h2 style="margin-top:0">計算結果</h2>
+
+        <div id="summaryOutput"></div>
+
+        <div id="stepsOutput">
+            計算ボタンを押すと、ここに手順が出力されます。
+        </div>
+    </section>
+
+    <section class="panel">
+        <details>
+            <summary>JSONを直接編集・インポート</summary>
+
+            <textarea id="jsonInput" spellcheck="false"></textarea>
+
+            <div class="json-actions">
+                <button class="btn-primary" onclick="applyJSON()">
+                    JSONを適用
+                </button>
+
+                <button class="btn-secondary" onclick="refreshJSON()">
+                    現在のデータを表示
+                </button>
+
+                <button class="btn-secondary" onclick="exportJSON()">
+                    JSONを保存
+                </button>
+            </div>
+
+            <label for="fileInput">JSONファイルを読み込む</label>
+            <input
+                type="file"
+                id="fileInput"
+                accept=".json,application/json"
+                onchange="importFile(event)"
+            >
+        </details>
+    </section>
+
 </div>
 
+<!-- 編集ドロワー -->
+
+<div
+    id="drawerBackdrop"
+    class="drawer-backdrop"
+    onclick="closeDrawer()"
+></div>
+
+<aside
+    id="drawer"
+    class="drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="drawerTitle"
+>
+    <div class="drawer-header">
+        <h2 id="drawerTitle">素材を編集</h2>
+        <button class="btn-secondary" onclick="closeDrawer()">閉じる</button>
+    </div>
+
+    <div class="drawer-content">
+
+        <div class="field">
+            <label for="editName">名前</label>
+            <input id="editName" type="text" placeholder="例: A">
+        </div>
+
+        <div class="field">
+            <label for="editType">種類</label>
+            <select id="editType">
+                <option value="item">アイテム</option>
+                <option value="book">エンチャント本</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="editPenalty">金床作業ペナルティ</label>
+            <input id="editPenalty" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="field">
+            <div class="enchant-heading">
+                <label>エンチャント</label>
+                <button class="btn-secondary" onclick="addEnchantRow()">
+                    ＋ 追加
+                </button>
+            </div>
+
+            <div id="enchantList" class="enchant-list"></div>
+
+            <p class="hint">
+                左側にエンチャント名、右側にレベルを入力してください。
+                例: ダメージ軽減 = 4、スニーク速度上昇 = 3、耐久力 = 3
+            </p>
+        </div>
+
+    </div>
+
+    <div class="drawer-footer">
+        <button class="btn-secondary" onclick="closeDrawer()">キャンセル</button>
+        <button class="btn-primary" onclick="saveDrawer()">保存</button>
+    </div>
+</aside>
+
 <script>
+"use strict";
+
+// ================================================
+// エンチャント設定
+// ================================================
+
 const ENCHANT_MULTIPLIERS = {
-    "SS":    { "item": 8, "book": 4 },
-    "Thorn": { "item": 8, "book": 4 },
-    "BP":    { "item": 4, "book": 2 },
-    "Prot":  { "item": 1, "book": 1 },
-    "Unb":   { "item": 2, "book": 1 },
-    "Mend":  { "item": 4, "book": 2 }
+    スニーク速度上昇:    { item: 8, book: 4 },
+    棘の鎧: { item: 8, book: 4 },
+    爆発耐性:    { item: 4, book: 2 },
+    ダメージ軽減:  { item: 1, book: 1 },
+    耐久力:   { item: 2, book: 1 },
+    修繕:  { item: 4, book: 2 }
 };
 
-const INCOMPATIBLE_GROUPS = [["Prot", "BP"]];
+const INCOMPATIBLE_GROUPS = [
+    ["ダメージ軽減", "爆発耐性"]
+];
 
 const LABELS = [
-    "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
-    "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
-    "㉑", "㉒", "㉓", "㉔", "㉕", "㉖", "㉗", "㉘", "㉙", "㉚"
+    "①", "②", "③", "④", "⑤",
+    "⑥", "⑦", "⑧", "⑨", "⑩",
+    "⑪", "⑫", "⑬", "⑭", "⑮",
+    "⑯", "⑰", "⑱", "⑲", "⑳",
+    "㉑", "㉒", "㉓", "㉔", "㉕",
+    "㉖", "㉗", "㉘", "㉙", "㉚"
 ];
 
 function getLabel(index) {
-    if (index < LABELS.length) {
-        return LABELS[index];
+    return LABELS[index] ?? `(${index + 1})`;
+}
+
+// ================================================
+// 初期データ
+// ================================================
+
+let items = [
+    {
+        enchant: { ダメージ軽減: 1, スニーク速度上昇: 2 },
+        penalty: 0,
+        type: "item"
+    },
+    {
+        enchant: { ダメージ軽減: 1, スニーク速度上昇: 2 },
+        penalty: 0,
+        type: "item"
+    },
+    {
+        enchant: {},
+        penalty: 0,
+        type: "item"
+    },
+    {
+        enchant: { 棘の鎧: 3 },
+        penalty: 0,
+        type: "book"
+    },
+    {
+        enchant: { 爆発耐性: 4 },
+        penalty: 0,
+        type: "book"
+    },
+    {
+        enchant: { 耐久力: 3 },
+        penalty: 0,
+        type: "book"
+    },
+    {
+        enchant: { 修繕: 1 },
+        penalty: 0,
+        type: "book"
+    }
+];
+
+let target = {
+    enchant: {
+        スニーク速度上昇: 3,
+        耐久力: 3,
+        修繕: 1,
+        棘の鎧: 3,
+        爆発耐性: 4
+    },
+    type: "item"
+};
+
+let editingIndex = -1;
+let editingTarget = false;
+
+// ================================================
+// 名前管理
+// ================================================
+
+function getMaterialName(index) {
+    let name = "";
+
+    index++;
+
+    while (index > 0) {
+        index--;
+        name = String.fromCharCode(65 + index % 26) + name;
+        index = Math.floor(index / 26);
     }
 
-    return `(${index + 1})`;
+    return name;
 }
+
+function normalizeItems() {
+    items.forEach((item, index) => {
+        item.name = getMaterialName(index);
+    });
+}
+
+// ================================================
+// 素材一覧表示
+// ================================================
+
+function renderMaterials() {
+    normalizeItems();
+
+    const list = document.getElementById("materialList");
+    list.replaceChildren();
+
+    if (items.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "素材がありません。「＋ 素材を追加」から追加してください。";
+        list.appendChild(empty);
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "material";
+
+        const info = document.createElement("div");
+        info.className = "material-info";
+
+        const name = document.createElement("div");
+        name.className = "material-name";
+        name.textContent = item.name;
+
+        const type = document.createElement("span");
+        type.className = "type-tag";
+        type.textContent = item.type === "book" ? "本" : "アイテム";
+
+        name.appendChild(type);
+
+        const details = document.createElement("div");
+        details.className = "material-details";
+
+        const enchantText = Object.keys(item.enchant).length
+            ? Object.entries(item.enchant)
+                .map(([key, value]) => `${key} ${value}`)
+                .join(" / ")
+            : "エンチャントなし";
+
+        details.textContent =
+            `${enchantText} / ペナルティ ${item.penalty}`;
+
+        info.append(name, details);
+
+        const actions = document.createElement("div");
+        actions.className = "material-actions";
+
+        const editButton = document.createElement("button");
+        editButton.className = "btn-secondary";
+        editButton.textContent = "編集";
+        editButton.onclick = () => editMaterial(index);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "btn-danger";
+        deleteButton.textContent = "削除";
+        deleteButton.onclick = () => deleteMaterial(index);
+
+        actions.append(editButton, deleteButton);
+        row.append(info, actions);
+
+        list.appendChild(row);
+    });
+}
+
+// ================================================
+// 素材追加・削除・編集
+// ================================================
+
+function addMaterial() {
+    items.push({
+        enchant: {},
+        penalty: 0,
+        type: "item"
+    });
+
+    renderMaterials();
+    editMaterial(items.length - 1);
+}
+
+function deleteMaterial(index) {
+    if (!confirm(`${getMaterialName(index)} を削除しますか？`)) {
+        return;
+    }
+
+    items.splice(index, 1);
+
+    renderMaterials();
+    refreshJSON();
+}
+
+function editMaterial(index) {
+    editingIndex = index;
+    editingTarget = false;
+
+    const item = items[index];
+
+    document.getElementById("drawerTitle").textContent =
+        `${getMaterialName(index)} を編集`;
+
+    document.getElementById("editName").value =
+        getMaterialName(index);
+
+    document.getElementById("editType").value = item.type;
+
+    document.getElementById("editPenalty").value =
+        item.penalty ?? 0;
+
+    renderEnchantEditor(item.enchant);
+
+    openDrawer();
+}
+
+// ================================================
+// ドロワー
+// ================================================
+
+function openDrawer() {
+    document.getElementById("drawerBackdrop").classList.add("open");
+    document.getElementById("drawer").classList.add("open");
+}
+
+function closeDrawer() {
+    document.getElementById("drawerBackdrop").classList.remove("open");
+    document.getElementById("drawer").classList.remove("open");
+}
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+        closeDrawer();
+    }
+});
+
+// ================================================
+// エンチャント編集UI
+// ================================================
+
+function renderEnchantEditor(enchant) {
+    const list = document.getElementById("enchantList");
+    list.replaceChildren();
+
+    for (const [name, level] of Object.entries(enchant || {})) {
+        createEnchantRow(name, level);
+    }
+}
+
+function createEnchantRow(name = "", level = 1) {
+    const list = document.getElementById("enchantList");
+
+    const row = document.createElement("div");
+    row.className = "enchant-row";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.placeholder = "エンチャント名";
+    nameInput.value = name;
+    nameInput.className = "enchant-name";
+    nameInput.setAttribute("aria-label", "エンチャント名");
+
+    const levelInput = document.createElement("input");
+    levelInput.type = "number";
+    levelInput.min = "1";
+    levelInput.step = "1";
+    levelInput.value = level;
+    levelInput.className = "enchant-level";
+    levelInput.setAttribute("aria-label", "エンチャントレベル");
+
+    const removeButton = document.createElement("button");
+    removeButton.className = "btn-danger";
+    removeButton.textContent = "×";
+    removeButton.title = "削除";
+    removeButton.onclick = () => row.remove();
+
+    row.append(nameInput, levelInput, removeButton);
+    list.appendChild(row);
+}
+
+function addEnchantRow() {
+    createEnchantRow("", 1);
+
+    const inputs = document.querySelectorAll(".enchant-name");
+    inputs[inputs.length - 1]?.focus();
+}
+
+function readEnchantEditor() {
+    const enchant = {};
+
+    const rows = document.querySelectorAll("#enchantList .enchant-row");
+
+    for (const row of rows) {
+        const name = row.querySelector(".enchant-name").value.trim();
+        const levelText = row.querySelector(".enchant-level").value.trim();
+
+        if (!name && !levelText) continue;
+
+        if (!name) {
+            throw new Error("エンチャント名を入力してください。");
+        }
+
+        if (!/^[1-9]\d*$/.test(levelText)) {
+            throw new Error(`${name} のレベルは正の整数にしてください。`);
+        }
+
+        if (Object.hasOwn(enchant, name)) {
+            throw new Error(`${name} が重複しています。`);
+        }
+
+        enchant[name] = Number(levelText);
+    }
+
+    return enchant;
+}
+
+// ================================================
+// ドロワーの保存
+// ================================================
+
+function saveDrawer() {
+    try {
+        const enchant = readEnchantEditor();
+
+        const penaltyText =
+            document.getElementById("editPenalty").value.trim();
+
+        if (!/^\d+$/.test(penaltyText)) {
+            throw new Error("ペナルティは0以上の整数にしてください。");
+        }
+
+        const penalty = Number(penaltyText);
+
+        if (!Number.issafeInteger(penalty)) {
+            throw new Error("ペナルティの値が大きすぎます。");
+        }
+
+        const type = document.getElementById("editType").value;
+
+        if (editingTarget) {
+            target = { enchant, type };
+            renderTarget();
+        } else {
+            if (editingIndex < 0 || editingIndex >= items.length) {
+                throw new Error("編集対象が見つかりません。");
+            }
+
+            items[editingIndex] = {
+                enchant,
+                penalty,
+                type
+            };
+
+            renderMaterials();
+        }
+
+        refreshJSON();
+        invalidateResult();
+        closeDrawer();
+
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+// ================================================
+// 目標編集
+// ================================================
+
+function renderTarget() {
+    const summary = document.getElementById("targetSummary");
+
+    const enchantText = Object.keys(target.enchant).length
+        ? Object.entries(target.enchant)
+            .map(([key, value]) => `${key} ${value}`)
+            .join(" / ")
+        : "エンチャントなし";
+
+    summary.textContent =
+        `種類: ${target.type === "book" ? "本" : "アイテム"}\n` +
+        `エンチャント: ${enchantText}`;
+
+    summary.style.whiteSpace = "pre-line";
+}
+
+function editTarget() {
+    editingIndex = -1;
+    editingTarget = true;
+
+    document.getElementById("drawerTitle").textContent =
+        "目標エンチャントを編集";
+
+    document.getElementById("editName").value = "目標";
+    document.getElementById("editType").value = target.type;
+    document.getElementById("editPenalty").value = "0";
+
+    renderEnchantEditor(target.enchant);
+
+    openDrawer();
+}
+
+// ================================================
+// JSON操作
+// ================================================
+
+function getJSONData() {
+    return items.map(item => ({
+        enchant: { ...item.enchant },
+        penalty: item.penalty,
+        type: item.type
+    }));
+}
+
+function refreshJSON() {
+    document.getElementById("jsonInput").value =
+        JSON.stringify(getJSONData(), null, 2);
+}
+
+function openImport() {
+    document.querySelector("details").open = true;
+
+    document.getElementById("jsonInput").value =
+        JSON.stringify(getJSONData(), null, 2);
+
+    document.getElementById("jsonInput").focus();
+}
+
+function applyJSON() {
+    try {
+        const data = JSON.parse(
+            document.getElementById("jsonInput").value
+        );
+
+        if (!Array.isArray(data)) {
+            throw new Error("JSONの最上位は配列にしてください。");
+        }
+
+        const parsed = data.map((item, index) => {
+            if (!item || typeof item !== "object" || Array.isArray(item)) {
+                throw new Error(`${index + 1}番目の素材が不正です。`);
+            }
+
+            if (!item.enchant || typeof item.enchant !== "object" ||
+                Array.isArray(item.enchant)) {
+                throw new Error(`${index + 1}番目の素材の enchant が不正です。`);
+            }
+
+            if (item.type !== "item" && item.type !== "book") {
+                throw new Error(
+                    `${index + 1}番目の素材の type は item または book にしてください。`
+                );
+            }
+
+            const penalty = item.penalty ?? 0;
+
+            if (!Number.issafeInteger(penalty) || penalty < 0) {
+                throw new Error(
+                    `${index + 1}番目の素材の penalty が不正です。`
+                );
+            }
+
+            const enchant = {};
+
+            for (const [name, level] of Object.entries(item.enchant)) {
+                if (!Number.issafeInteger(level) || level < 1) {
+                    throw new Error(
+                        `${name} のレベルは正の整数にしてください。`
+                    );
+                }
+
+                enchant[name] = level;
+            }
+
+            return {
+                enchant,
+                penalty,
+                type: item.type
+            };
+        });
+
+        items = parsed;
+
+        renderMaterials();
+        refreshJSON();
+        invalidateResult();
+
+        alert("JSONを適用しました。");
+
+    } catch (error) {
+        alert("JSONの読み込みに失敗しました。\n" + error.message);
+    }
+}
+
+function importFile(event) {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+        document.getElementById("jsonInput").value = reader.result;
+        applyJSON();
+        event.target.value = "";
+    };
+
+    reader.onerror = () => {
+        alert("ファイルを読み込めませんでした。");
+        event.target.value = "";
+    };
+
+    reader.readAsText(file);
+}
+
+function exportJSON() {
+    const blob = new Blob(
+        [JSON.stringify(getJSONData(), null, 2)],
+        { type: "application/json;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "minecraft_items.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// ================================================
+// 経験値計算
+// ================================================
 
 function levelToXp(level) {
     if (level <= 0) return 0;
@@ -175,6 +1076,10 @@ function levelToXp(level) {
 function getPenaltyLevel(count) {
     return 2 ** count - 1;
 }
+
+// ================================================
+// 金床合成
+// ================================================
 
 function add(itemA, itemB) {
     if (itemA.type === "book" && itemB.type !== "book") {
@@ -198,23 +1103,23 @@ function add(itemA, itemB) {
         itemB.type === "book" ? "book" : "item";
 
     for (const [ench, levelB] of Object.entries(enchantsB)) {
-        let isIncompatible = false;
+        let incompatible = false;
 
         for (const group of INCOMPATIBLE_GROUPS) {
-            if (group.includes(ench)) {
-                const enemy = group.find(
-                    e => e !== ench && enchantsA[e] !== undefined
-                );
+            if (!group.includes(ench)) continue;
 
-                if (enemy) {
-                    isIncompatible = true;
-                    enchantCost += 1;
-                    break;
-                }
+            const enemy = group.find(
+                e => e !== ench && enchantsA[e] !== undefined
+            );
+
+            if (enemy) {
+                incompatible = true;
+                enchantCost += 1;
+                break;
             }
         }
 
-        if (isIncompatible) continue;
+        if (incompatible) continue;
 
         const levelA = nextEnchants[ench];
 
@@ -241,9 +1146,7 @@ function add(itemA, itemB) {
 
     const totalLevel = baseCost + enchantCost;
 
-    if (totalLevel >= 40) {
-        return null;
-    }
+    if (totalLevel >= 40) return null;
 
     return {
         item: {
@@ -256,36 +1159,30 @@ function add(itemA, itemB) {
     };
 }
 
-function targetReached(item, target) {
-    if (item.type !== target.type) {
-        return false;
-    }
+function targetReached(item, goal) {
+    if (item.type !== goal.type) return false;
 
-    for (const [key, value] of Object.entries(target.enchant)) {
-        if (item.enchant[key] !== value) {
-            return false;
-        }
+    for (const [key, value] of Object.entries(goal.enchant)) {
+        if (item.enchant[key] !== value) return false;
     }
 
     return true;
 }
 
+// ================================================
+// 最適化探索
+// ================================================
+
 let minTotalXp = Infinity;
 let bestSteps = [];
 let searchCount = 0;
 
-function dfs(currentItems, totalXp, steps, target, nextLabel) {
+function dfs(currentItems, totalXp, steps, goal, nextLabel) {
     searchCount++;
 
-    if (totalXp >= minTotalXp) {
-        return;
-    }
+    if (totalXp >= minTotalXp) return;
 
-    const found = currentItems.find(
-        item => targetReached(item, target)
-    );
-
-    if (found) {
+    if (currentItems.some(item => targetReached(item, goal))) {
         minTotalXp = totalXp;
         bestSteps = [...steps];
         return;
@@ -327,115 +1224,114 @@ function dfs(currentItems, totalXp, steps, target, nextLabel) {
                 nextItems,
                 totalXp + res.xp,
                 [...steps, step],
-                target,
+                goal,
                 nextLabel + 1
             );
         }
     }
 }
 
-function runOptimization() {
-    try {
-        const items = JSON.parse(
-            document.getElementById("itemsInput").value
-        );
+// ================================================
+// 結果表示
+// ================================================
 
-        const target = JSON.parse(
-            document.getElementById("targetInput").value
-        );
+function invalidateResult() {
+    document.getElementById("summaryOutput").style.display = "none";
 
-        if (!Array.isArray(items) || items.length === 0) {
-            throw new Error("素材データは空でない配列にしてください。");
-        }
-
-        if (!target || typeof target.enchant !== "object") {
-            throw new Error("目標エンチャントの形式が正しくありません。");
-        }
-
-        items.forEach((item, index) => {
-            item.name = String.fromCharCode(65 + index);
-        });
-
-        minTotalXp = Infinity;
-        bestSteps = [];
-        searchCount = 0;
-
-        const summaryOutput =
-            document.getElementById("summaryOutput");
-
-        const stepsOutput =
-            document.getElementById("stepsOutput");
-
-        summaryOutput.style.display = "none";
-        stepsOutput.textContent = "計算中...";
-
-        setTimeout(() => {
-            try {
-                dfs(items, 0, [], target, 0);
-
-                if (minTotalXp === Infinity) {
-                    summaryOutput.style.display = "none";
-
-                    stepsOutput.innerHTML =
-                        "<b style='color:red;'>" +
-                        "合成ルートが見つかりませんでした。" +
-                        "コストが40以上、合成方向が無効、" +
-                        "素材不足などの可能性があります。" +
-                        "</b>";
-
-                    return;
-                }
-
-                summaryOutput.style.display = "block";
-
-                summaryOutput.textContent =
-                    `最小消費経験値: ${minTotalXp.toLocaleString()} XP`;
-
-                let html = "<pre>";
-
-                // 素材一覧
-                items.forEach(item => {
-                    const data = {
-                        enchant: item.enchant || {},
-                        penalty: item.penalty || 0,
-                        type: item.type
-                    };
-
-                    html +=
-                        `${item.name}: ${JSON.stringify(data)}\n`;
-                });
-
-                html += "\n";
-
-                // 合成手順
-                bestSteps.forEach((step, index) => {
-                    html +=
-                        `${getLabel(index)} ` +
-                        `${step.left} + ${step.right} ＝＞ ` +
-                        `必要: ${step.level}Lv (${step.xp}XP)\n`;
-                });
-
-                html += "\n";
-                html += `合計: ${minTotalXp}XP\n`;
-                html += `探索ノード数: ${searchCount}`;
-
-                html += "</pre>";
-
-                stepsOutput.innerHTML = html;
-
-            } catch (error) {
-                stepsOutput.textContent =
-                    "計算エラー: " + error.message;
-            }
-        }, 50);
-
-    } catch (error) {
-        alert(
-            "JSONの形式を確認してください。\n" +
-            error.message
-        );
-    }
+    document.getElementById("stepsOutput").textContent =
+        "素材や目標を変更しました。再計算してください。";
 }
+
+function runOptimization() {
+    minTotalXp = Infinity;
+    bestSteps = [];
+    searchCount = 0;
+
+    const summary = document.getElementById("summaryOutput");
+    const output = document.getElementById("stepsOutput");
+    const button = document.getElementById("calculateButton");
+
+    summary.style.display = "none";
+    output.textContent = "計算中...";
+    button.disabled = true;
+
+    const startItems = items.map((item, index) => ({
+        ...item,
+        enchant: { ...item.enchant },
+        name: getMaterialName(index)
+    }));
+
+    const goal = {
+        type: target.type,
+        enchant: { ...target.enchant }
+    };
+
+    setTimeout(() => {
+        try {
+            dfs(startItems, 0, [], goal, 0);
+
+            if (minTotalXp === Infinity) {
+                output.textContent =
+                    "合成ルートが見つかりませんでした。\n" +
+                    "コストが40以上、合成方向が無効、素材不足などの可能性があります。";
+
+                return;
+            }
+
+            summary.style.display = "block";
+            summary.textContent =
+                `最小消費経験値: ${minTotalXp.toLocaleString()} XP`;
+
+            const lines = [];
+
+            // 素材一覧
+            startItems.forEach(item => {
+                const data = {
+                    enchant: item.enchant,
+                    penalty: item.penalty,
+                    type: item.type
+                };
+
+                lines.push(
+                    `${item.name}: ${JSON.stringify(data)}`
+                );
+            });
+
+            lines.push("");
+
+            // 合成手順
+            bestSteps.forEach((step, index) => {
+                lines.push(
+                    `${getLabel(index)} ${step.left} + ${step.right} ＝＞ ` +
+                    `必要: ${step.level}Lv (${step.xp}XP)`
+                );
+            });
+
+            lines.push("");
+            lines.push(`合計: ${minTotalXp}XP`);
+            lines.push(`探索ノード数: ${searchCount}`);
+
+            const pre = document.createElement("pre");
+            pre.textContent = lines.join("\n");
+
+            output.replaceChildren(pre);
+
+        } catch (error) {
+            output.textContent = "計算エラー: " + error.message;
+        } finally {
+            button.disabled = false;
+        }
+    }, 20);
+}
+
+// ================================================
+// 初期化
+// ================================================
+
+renderMaterials();
+renderTarget();
+refreshJSON();
+
 </script>
 
 </body>
